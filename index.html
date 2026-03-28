@@ -789,51 +789,51 @@ async function fetchPrices() {
         avg: d.avg
       };
     });
+
+    // Update cards
+    const allMax = Object.values(priceData).map(d => d.max);
+    const globalMax = Math.max(...allMax);
+    const globalMin = Math.min(...allMax);
+
+    grid.innerHTML = COUNTRIES.map(c => {
+      const d = priceData[c];
+      if (!d) return `<div class="price-card" style="opacity:0.3">
+        <div class="card-country">${c}</div>
+        <div class="card-price" style="font-size:0.9rem;color:var(--muted)">N/A</div>
+        <div class="card-unit">no data</div>
+      </div>`;
+
+      const isHigh = d.max === globalMax;
+      const isLow = d.max === globalMin;
+      const isAlert = d.max > 200;
+
+      return `<div class="price-card ${isAlert ? 'alert' : ''}">
+        <div class="card-country">${c}</div>
+        <div class="card-price">${d.max.toFixed(1)}</div>
+        <div class="card-unit">EUR/MWh · avg ${d.avg.toFixed(0)}</div>
+        ${isHigh ? '<div class="card-badge badge-high">HIGH</div>' : ''}
+        ${isLow ? '<div class="card-badge badge-low">LOW</div>' : ''}
+      </div>`;
+    }).join('');
+
+    // Update ticker
+    const tickerItems = COUNTRIES.filter(c => priceData[c]).map(c => {
+      const d = priceData[c];
+      return `<div class="ticker-item">
+        <span class="ticker-country">${c}</span>
+        <span class="ticker-price">${d.max.toFixed(1)} EUR/MWh</span>
+      </div>`;
+    });
+    const doubled = [...tickerItems, ...tickerItems].join('');
+    ticker.innerHTML = doubled;
+
+    document.getElementById('lastUpdated').textContent =
+      'Updated ' + new Date().toLocaleTimeString('en-GB', {hour:'2-digit',minute:'2-digit'});
+      
   } catch (error) {
     console.error('Price fetch error:', error);
     grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:var(--muted);padding:40px">Unable to load prices. Please try again later.</div>';
-    return;
   }
-
-  // Update cards
-  const allMax = Object.values(priceData).map(d => d.max);
-  const globalMax = Math.max(...allMax);
-  const globalMin = Math.min(...allMax);
-
-  grid.innerHTML = COUNTRIES.map(c => {
-    const d = priceData[c];
-    if (!d) return `<div class="price-card" style="opacity:0.3">
-      <div class="card-country">${c}</div>
-      <div class="card-price" style="font-size:0.9rem;color:var(--muted)">N/A</div>
-      <div class="card-unit">no data</div>
-    </div>`;
-
-    const isHigh = d.max === globalMax;
-    const isLow = d.max === globalMin;
-    const isAlert = d.max > 200;
-
-    return `<div class="price-card ${isAlert ? 'alert' : ''}">
-      <div class="card-country">${c}</div>
-      <div class="card-price">${d.max.toFixed(1)}</div>
-      <div class="card-unit">EUR/MWh · avg ${d.avg.toFixed(0)}</div>
-      ${isHigh ? '<div class="card-badge badge-high">HIGH</div>' : ''}
-      ${isLow ? '<div class="card-badge badge-low">LOW</div>' : ''}
-    </div>`;
-  }).join('');
-
-  // Update ticker
-  const tickerItems = COUNTRIES.filter(c => priceData[c]).map(c => {
-    const d = priceData[c];
-    return `<div class="ticker-item">
-      <span class="ticker-country">${c}</span>
-      <span class="ticker-price">${d.max.toFixed(1)} EUR/MWh</span>
-    </div>`;
-  });
-  const doubled = [...tickerItems, ...tickerItems].join('');
-  ticker.innerHTML = doubled;
-
-  document.getElementById('lastUpdated').textContent =
-    'Updated ' + new Date().toLocaleTimeString('en-GB', {hour:'2-digit',minute:'2-digit'});
 }
 
 function joinWaitlist() {
