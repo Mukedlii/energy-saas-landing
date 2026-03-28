@@ -3,20 +3,36 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET');
   
-  const COUNTRIES = ['DE','FR','AT','HU','CZ','SK','RO','PL','IT','ES','NL','BE','CH','SI','HR'];
+  const COUNTRIES = {
+    'DE': 'DE-LU',
+    'FR': 'FR',
+    'AT': 'AT',
+    'HU': 'HU',
+    'CZ': 'CZ',
+    'SK': 'SK',
+    'RO': 'RO',
+    'PL': 'PL',
+    'IT': 'IT_NORD',
+    'ES': 'ES',
+    'NL': 'NL',
+    'BE': 'BE',
+    'CH': 'CH',
+    'SI': 'SI',
+    'HR': 'HR'
+  };
   const today = new Date().toISOString().split('T')[0];
   
   try {
     const results = await Promise.allSettled(
-      COUNTRIES.map(country =>
-        fetch(`https://api.energy-charts.info/price?bzn=${country}&start=${today}&end=${today}`)
+      Object.entries(COUNTRIES).map(([code, bzn]) =>
+        fetch(`https://api.energy-charts.info/price?bzn=${bzn}&start=${today}&end=${today}`)
           .then(r => r.json())
           .then(data => {
             if (data.price && Array.isArray(data.price)) {
               const valid = data.price.filter(p => p !== null && !isNaN(p));
               if (valid.length) {
                 return {
-                  country,
+                  country: code,
                   max: Math.max(...valid),
                   min: Math.min(...valid),
                   avg: valid.reduce((a,b) => a+b, 0) / valid.length,
@@ -24,9 +40,9 @@ export default async function handler(req, res) {
                 };
               }
             }
-            return { country, error: 'No valid data' };
+            return { country: code, error: 'No valid data' };
           })
-          .catch(() => ({ country, error: true }))
+          .catch(() => ({ country: code, error: true }))
       )
     );
     
