@@ -770,35 +770,30 @@
 const COUNTRIES = ['DE','FR','AT','HU','CZ','SK','RO','PL','IT','ES','NL','BE','CH','SI','HR'];
 
 async function fetchPrices() {
-  const today = new Date().toISOString().split('T')[0];
   const grid = document.getElementById('priceGrid');
   const ticker = document.getElementById('ticker');
 
-  const results = await Promise.allSettled(
-    COUNTRIES.map(c =>
-      fetch(`https://api.energy-charts.info/price?bzn=${c}&start=${today}&end=${today}`)
-        .then(r => r.json())
-        .then(d => ({ country: c, data: d }))
-        .catch(() => ({ country: c, error: true }))
-    )
-  );
-
-  const priceData = {};
-  results.forEach(r => {
-    if (r.status === 'fulfilled') {
-      const { country, data, error } = r.value;
-      if (!error && data.price) {
-        const valid = data.price.filter(p => p !== null && !isNaN(p));
-        if (valid.length) {
-          priceData[country] = {
-            max: Math.max(...valid),
-            min: Math.min(...valid),
-            avg: valid.reduce((a,b)=>a+b,0)/valid.length
-          };
-        }
-      }
+  try {
+    const response = await fetch('/api/prices');
+    const result = await response.json();
+    
+    if (!result.success || !result.countries) {
+      throw new Error('Failed to fetch prices');
     }
-  });
+
+    const priceData = {};
+    result.countries.forEach(d => {
+      priceData[d.country] = {
+        max: d.max,
+        min: d.min,
+        avg: d.avg
+      };
+    });
+  } catch (error) {
+    console.error('Price fetch error:', error);
+    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:var(--muted);padding:40px">Unable to load prices. Please try again later.</div>';
+    return;
+  }
 
   // Update cards
   const allMax = Object.values(priceData).map(d => d.max);
