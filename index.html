@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Energy Monitor – Real-time Electricity Prices API</title>
+<meta name="description" content="Real-time electricity prices for 15 European countries. One API for traders, businesses, and developers.">
+<meta property="og:title" content="Energy Monitor – Real-time Electricity Prices API">
+<meta property="og:description" content="Monitor energy prices across 15 European countries. Simple REST API, no key required for basic use.">
+<meta property="og:url" content="https://energy-saas-landing.vercel.app/">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://energy-saas-landing.vercel.app/og-image.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Energy Monitor – Real-time Electricity Prices API">
+<meta name="twitter:description" content="Monitor energy prices across 15 European countries. Simple REST API, no key required.">
+<meta name="twitter:image" content="https://energy-saas-landing.vercel.app/og-image.png">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #12121a;
+    --border: #1e1e2e;
+    --accent: #e8ff47;
+    --accent2: #47ffe8;
+    --text: #f0f0f0;
+    --muted: #666680;
+    --danger: #ff4747;
+    --green: #47ff8a;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: 'Syne', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    overflow-x: hidden;
+    line-height: 1.6;
+  }
+  /* NOISE OVERLAY */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 9999;
+    opacity: 0.4;
+  }
+
+  /* NAV */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 40px;
+    background: rgba(10,10,15,0.85);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+  }
+  .nav-logo {
+    font-size: 1.1rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: var(--accent);
+    text-decoration: none;
+  }
+  .nav-links { display: flex; gap: 32px; align-items: center; }
+  .nav-links a {
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    transition: color 0.2s;
+  }
+  .nav-links a:hover { color: var(--text); }
+  .nav-cta {
+    background: var(--accent) !important;
+    color: #0a0a0f !important;
+    padding: 8px 20px;
+    border-radius: 4px;
+    font-size: 0.8rem !important;
+  }
+
+  /* HERO */
+  .hero {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 120px 40px 80px;
+    max-width: 1100px;
+    margin: 0 auto;
+    position: relative;
+  }
+  .hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(232,255,71,0.08);
+    border: 1px solid rgba(232,255,71,0.2);
+    color: var(--accent);
+    padding: 6px 14px;
+    border-radius: 100px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 32px;
+    animation: fadeUp 0.6s ease both;
+  }
+  .hero-badge span { width: 6px; height: 6px; background: var(--accent); border-radius: 50%; animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+  h1 {
+    font-size: clamp(2.8rem, 6vw, 5.5rem);
+    font-weight: 800;
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+    margin-bottom: 28px;
+    animation: fadeUp 0.6s 0.1s ease both;
+  }
+  h1 em { font-style: normal; color: var(--accent); }
+  .hero-sub {
+    font-size: 1.15rem;
+    color: var(--muted);
+    max-width: 540px;
+    margin-bottom: 48px;
+    font-weight: 400;
+    animation: fadeUp 0.6s 0.2s ease both;
+  }
+  .hero-actions {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    animation: fadeUp 0.6s 0.3s ease both;
+  }
+  .btn-primary {
+    background: var(--accent);
+    color: #0a0a0f;
+    padding: 14px 28px;
+    border-radius: 4px;
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 0.95rem;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(232,255,71,0.3); }
+  .btn-ghost {
+    color: var(--muted);
+    padding: 14px 24px;
+    border-radius: 4px;
+    font-family: 'Syne', sans-serif;
+    font-weight: 600;
+    font-size: 0.9rem;
+    text-decoration: none;
+    border: 1px solid var(--border);
+    cursor: pointer;
+    background: transparent;
+    transition: color 0.2s, border-color 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .btn-ghost:hover { color: var(--text); border-color: var(--muted); }
+
+  /* LIVE TICKER */
+  .ticker-wrap {
+    width: 100%;
+    overflow: hidden;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 0;
+    background: var(--surface);
+    margin: 60px 0;
+  }
+  .ticker {
+    display: flex;
+    gap: 48px;
+    animation: ticker 30s linear infinite;
+    white-space: nowrap;
+    width: max-content;
+  }
+  @keyframes ticker { from{transform:translateX(0)} to{transform:translateX(-50%)} }
+  .ticker-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8rem;
+  }
+  .ticker-country { color: var(--muted); font-weight: 500; }
+  .ticker-price { color: var(--accent); font-weight: 500; }
+  .ticker-up { color: var(--danger); font-size: 0.7rem; }
+  .ticker-down { color: var(--green); font-size: 0.7rem; }
+
+  /* LIVE DEMO */
+  .section { padding: 80px 40px; max-width: 1100px; margin: 0 auto; }
+  .section-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 16px;
+  }
+  h2 {
+    font-size: clamp(1.8rem, 3.5vw, 2.8rem);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    margin-bottom: 16px;
+    line-height: 1.15;
+  }
+  .section-sub { color: var(--muted); max-width: 500px; margin-bottom: 48px; font-size: 0.95rem; }
+
+  /* PRICE CARDS */
+  .price-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  .price-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.2s, transform 0.2s;
+  }
+  .price-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+  .price-card.loading { opacity: 0.4; }
+  .price-card.alert { border-color: var(--danger); }
+  .price-card.alert::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: var(--danger);
+  }
+  .card-country {
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .card-price {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1.3rem;
+    font-weight: 500;
+    color: var(--text);
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+  .card-unit { font-size: 0.65rem; color: var(--muted); }
+  .card-badge {
+    position: absolute;
+    top: 10px; right: 10px;
+    font-size: 0.6rem;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 3px;
+    letter-spacing: 0.05em;
+  }
+  .badge-high { background: rgba(255,71,71,0.15); color: var(--danger); }
+  .badge-low { background: rgba(71,255,138,0.15); color: var(--green); }
+
+  .demo-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.75rem;
+    color: var(--muted);
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+  }
+  .live-dot {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .live-dot::before {
+    content: '';
+    width: 7px; height: 7px;
+    background: var(--green);
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+  }
+
+  /* PROBLEMS */
+  .problems-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 80px;
+  }
+  .problem-item {
+    background: var(--surface);
+    padding: 40px 32px;
+  }
+  .problem-icon { font-size: 1.8rem; margin-bottom: 16px; }
+  .problem-item h3 { font-size: 1rem; font-weight: 700; margin-bottom: 10px; }
+  .problem-item p { font-size: 0.85rem; color: var(--muted); line-height: 1.6; }
+
+  /* FEATURES */
+  .features-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+  }
+  .feature-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 32px;
+    transition: border-color 0.2s;
+  }
+  .feature-card:hover { border-color: rgba(232,255,71,0.3); }
+  .feature-icon {
+    font-size: 1.5rem;
+    margin-bottom: 20px;
+    display: block;
+  }
+  .feature-card h3 { font-size: 1rem; font-weight: 700; margin-bottom: 10px; }
+  .feature-card p { font-size: 0.85rem; color: var(--muted); line-height: 1.6; }
+
+  /* USE CASES */
+  .usecases-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 24px;
+  }
+  .usecase-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 32px;
+  }
+  .usecase-card h3 { font-size: 1.05rem; font-weight: 700; margin-bottom: 14px; }
+  .usecase-card ul { list-style: none; }
+  .usecase-card li {
+    font-size: 0.85rem;
+    color: var(--muted);
+    padding: 6px 0;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .usecase-card li:last-child { border-bottom: none; }
+  .usecase-card li::before { content: '→'; color: var(--accent); font-size: 0.75rem; }
+
+  /* PRICING */
+  .pricing-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+  }
+  .pricing-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 36px 28px;
+    position: relative;
+  }
+  .pricing-card.featured {
+    border-color: var(--accent);
+    background: rgba(232,255,71,0.03);
+  }
+  .pricing-card.featured::before {
+    content: 'MOST POPULAR';
+    position: absolute;
+    top: -1px; left: 50%; transform: translateX(-50%);
+    background: var(--accent);
+    color: #0a0a0f;
+    font-size: 0.6rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    padding: 4px 12px;
+    border-radius: 0 0 4px 4px;
+  }
+  .pricing-tier { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-bottom: 12px; }
+  .pricing-price { font-family: 'JetBrains Mono', monospace; font-size: 2.8rem; font-weight: 500; line-height: 1; margin-bottom: 4px; }
+  .pricing-price sup { font-size: 1.2rem; vertical-align: top; margin-top: 8px; }
+  .pricing-mo { font-size: 0.8rem; color: var(--muted); margin-bottom: 28px; }
+  .pricing-features { list-style: none; margin-bottom: 28px; }
+  .pricing-features li {
+    font-size: 0.85rem;
+    color: var(--muted);
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .pricing-features li:last-child { border-bottom: none; }
+  .pricing-features li::before { content: '✓'; color: var(--green); font-weight: 700; font-size: 0.75rem; }
+  .pricing-card .btn-primary { width: 100%; justify-content: center; }
+  .pricing-card .btn-ghost { width: 100%; justify-content: center; }
+
+  /* WAITLIST */
+  .waitlist-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 60px 48px;
+    max-width: 640px;
+    margin: 0 auto;
+    text-align: center;
+  }
+  .waitlist-wrap h2 { margin-bottom: 12px; }
+  .waitlist-wrap p { color: var(--muted); margin-bottom: 36px; font-size: 0.95rem; }
+  .waitlist-form { display: flex; gap: 12px; max-width: 420px; margin: 0 auto 16px; }
+  .waitlist-form input {
+    flex: 1;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 12px 16px;
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    font-size: 0.9rem;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .waitlist-form input:focus { border-color: var(--accent); }
+  .waitlist-form input::placeholder { color: var(--muted); }
+  .waitlist-note { font-size: 0.75rem; color: var(--muted); }
+  .waitlist-success {
+    display: none;
+    color: var(--green);
+    font-size: 0.9rem;
+    margin-top: 16px;
+  }
+
+  /* FOOTER */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    max-width: 1100px;
+    margin: 60px auto 0;
+  }
+  .footer-logo { font-weight: 800; color: var(--accent); font-size: 1rem; }
+  .footer-links { display: flex; gap: 24px; }
+  .footer-links a {
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 0.8rem;
+    transition: color 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .footer-links a:hover { color: var(--text); }
+  .footer-copy { font-size: 0.75rem; color: var(--muted); }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* RESPONSIVE */
+  @media (max-width: 768px) {
+    nav { padding: 16px 20px; }
+    .nav-links { display: none; }
+    .hero { padding: 100px 20px 60px; }
+    .section { padding: 60px 20px; }
+    .problems-grid, .features-grid, .pricing-grid { grid-template-columns: 1fr; }
+    .usecases-grid { grid-template-columns: 1fr; }
+    .price-grid { grid-template-columns: repeat(3, 1fr); }
+    footer { flex-direction: column; gap: 20px; text-align: center; }
+    .waitlist-form { flex-direction: column; }
+    .waitlist-wrap { padding: 40px 20px; }
+  }
+
+  /* divider */
+  .divider { border: none; border-top: 1px solid var(--border); margin: 0; }
+</style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-logo" href="#">⚡ EnergyMonitor</a>
+  <div class="nav-links">
+    <a href="#demo">Live Data</a>
+    <a href="#pricing">Pricing</a>
+    <a href="https://github.com/Mukedlii/global-electricity-price-monitor" target="_blank">GitHub ↗</a>
+    <a href="#waitlist" class="nav-cta">Get Early Access</a>
+  </div>
+</nav>
+
+<!-- TICKER -->
+<div class="ticker-wrap" style="margin-top:57px">
+  <div class="ticker" id="ticker">
+    <div class="ticker-item"><span class="ticker-country">DE</span><span class="ticker-price">— EUR/MWh</span></div>
+    <div class="ticker-item"><span class="ticker-country">FR</span><span class="ticker-price">— EUR/MWh</span></div>
+    <div class="ticker-item"><span class="ticker-country">AT</span><span class="ticker-price">— EUR/MWh</span></div>
+    <div class="ticker-item"><span class="ticker-country">HU</span><span class="ticker-price">— EUR/MWh</span></div>
+    <div class="ticker-item"><span class="ticker-country">CZ</span><span class="ticker-price">— EUR/MWh</span></div>
+    <div class="ticker-item"><span class="ticker-country">PL</span><span class="ticker-price">— EUR/MWh</span></div>
+    <div class="ticker-item"><span class="ticker-country">IT</span><span class="ticker-price">— EUR/MWh</span></div>
+    <div class="ticker-item"><span class="ticker-country">ES</span><span class="ticker-price">— EUR/MWh</span></div>
+    <div class="ticker-item"><span class="ticker-country">NL</span><span class="ticker-price">— EUR/MWh</span></div>
+    <!-- duplicate for seamless loop -->
+    <div class="ticker-item"><span class="ticker-country">DE</span><span class="ticker-price">— EUR/MWh</span></div>
+    <div class="ticker-item"><span class="ticker-country">FR</span><span class="ticker-price">— EUR/MWh</span></div>
+    <div class="ticker-item"><span class="ticker-country">AT</span><span class="ticker-price">— EUR/MWh</span></div>
+    <div class="ticker-item"><span class="ticker-country">HU</span><span class="ticker-price">— EUR/MWh</span></div>
+    <div class="ticker-item"><span class="ticker-country">CZ</span><span class="ticker-price">— EUR/MWh</span></div>
+    <div class="ticker-item"><span class="ticker-country">PL</span><span class="ticker-price">— EUR/MWh</span></div>
+    <div class="ticker-item"><span class="ticker-country">IT</span><span class="ticker-price">— EUR/MWh</span></div>
+    <div class="ticker-item"><span class="ticker-country">ES</span><span class="ticker-price">— EUR/MWh</span></div>
+    <div class="ticker-item"><span class="ticker-country">NL</span><span class="ticker-price">— EUR/MWh</span></div>
+  </div>
+</div>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-badge"><span></span> Now live – 15 European countries</div>
+  <h1>Real-time electricity<br>prices. <em>One API.</em></h1>
+  <p class="hero-sub">Monitor energy prices across Europe, trigger alerts, and optimize costs. Built for traders, industrial consumers, and developers.</p>
+  <div class="hero-actions">
+    <a href="#waitlist" class="btn-primary">⚡ Get Early Access</a>
+    <a href="https://github.com/Mukedlii/global-electricity-price-monitor" target="_blank" class="btn-ghost">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+      View on GitHub
+    </a>
+  </div>
+</div>
+
+<!-- LIVE DEMO -->
+<div class="section" id="demo">
+  <div class="section-label">Live Data</div>
+  <h2>Today's prices across Europe</h2>
+  <p class="section-sub">Live data from Energy-Charts API. No API key required for basic access.</p>
+
+  <div class="price-grid" id="priceGrid">
+    <!-- filled by JS -->
+    <div class="price-card loading"><div class="card-country">DE</div><div class="card-price">...</div></div>
+    <div class="price-card loading"><div class="card-country">FR</div><div class="card-price">...</div></div>
+    <div class="price-card loading"><div class="card-country">AT</div><div class="card-price">...</div></div>
+    <div class="price-card loading"><div class="card-country">HU</div><div class="card-price">...</div></div>
+    <div class="price-card loading"><div class="card-country">CZ</div><div class="card-price">...</div></div>
+    <div class="price-card loading"><div class="card-country">SK</div><div class="card-price">...</div></div>
+    <div class="price-card loading"><div class="card-country">PL</div><div class="card-price">...</div></div>
+    <div class="price-card loading"><div class="card-country">IT</div><div class="card-price">...</div></div>
+    <div class="price-card loading"><div class="card-country">ES</div><div class="card-price">...</div></div>
+    <div class="price-card loading"><div class="card-country">NL</div><div class="card-price">...</div></div>
+    <div class="price-card loading"><div class="card-country">BE</div><div class="card-price">...</div></div>
+    <div class="price-card loading"><div class="card-country">RO</div><div class="card-price">...</div></div>
+    <div class="price-card loading"><div class="card-country">CH</div><div class="card-price">...</div></div>
+    <div class="price-card loading"><div class="card-country">SI</div><div class="card-price">...</div></div>
+    <div class="price-card loading"><div class="card-country">HR</div><div class="card-price">...</div></div>
+  </div>
+  <div class="demo-footer">
+    <span class="live-dot">Live · Energy-Charts API · No key required</span>
+    <span id="lastUpdated">Loading...</span>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- PROBLEM -->
+<div class="section">
+  <div class="section-label">The Problem</div>
+  <h2>Energy data is scattered,<br>complex, and hard to access.</h2>
+  <p class="section-sub" style="margin-bottom:40px">Every TSO has a different format. No unified view.</p>
+  <div class="problems-grid">
+    <div class="problem-item">
+      <div class="problem-icon">🤯</div>
+      <h3>Fragmented Data</h3>
+      <p>Every country has a different TSO, different format, and a different API – or no API at all.</p>
+    </div>
+    <div class="problem-item">
+      <div class="problem-icon">📊</div>
+      <h3>No Unified View</h3>
+      <p>Want to compare prices across Poland, Czechia, and Germany? Prepare to visit 3+ different websites.</p>
+    </div>
+    <div class="problem-item">
+      <div class="problem-icon">⚡</div>
+      <h3>Hard to Integrate</h3>
+      <p>Building your own scraper means dealing with rate limits, changing structures, and maintaining dozens of endpoints.</p>
+    </div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- FEATURES -->
+<div class="section">
+  <div class="section-label">Solution</div>
+  <h2>One API. All of Europe.<br>Real-time.</h2>
+  <p class="section-sub" style="margin-bottom:40px">Everything you need to build energy-aware applications.</p>
+  <div class="features-grid">
+    <div class="feature-card">
+      <span class="feature-icon">⚡</span>
+      <h3>Real-time Prices</h3>
+      <p>Live electricity prices from 15 European countries, 96 data points per day, updated continuously.</p>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">🔔</span>
+      <h3>Smart Alerts</h3>
+      <p>Get notified when prices drop, spike, or hit your custom thresholds. Email, SMS, webhook, or Telegram.</p>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">🗄️</span>
+      <h3>Historical Data</h3>
+      <p>Up to 2 years of historical data to backtest strategies and analyze seasonal patterns.</p>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">🔌</span>
+      <h3>Simple REST API</h3>
+      <p>Clean JSON endpoints. No complex setup. Integrate in minutes with any language or framework.</p>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">🛡️</span>
+      <h3>Reliable & Fast</h3>
+      <p>99.9% uptime SLA. CDN-cached responses. Built on battle-tested infrastructure.</p>
+    </div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- USE CASES -->
+<div class="section">
+  <div class="section-label">Use Cases</div>
+  <h2>Built for people who need<br>to act on energy prices.</h2>
+  <div class="usecases-grid" style="margin-top:40px">
+    <div class="usecase-card">
+      <h3>🏦 Energy Traders</h3>
+      <ul>
+        <li>Monitor arbitrage opportunities across markets</li>
+        <li>Real-time decision making on price spikes</li>
+        <li>Historical trend analysis and backtesting</li>
+      </ul>
+    </div>
+    <div class="usecase-card">
+      <h3>🏭 Industrial Consumers</h3>
+      <ul>
+        <li>Schedule production when electricity is cheap</li>
+        <li>Reduce operational expenses by 10–30%</li>
+        <li>Automated alerts for budget management</li>
+      </ul>
+    </div>
+    <div class="usecase-card">
+      <h3>🔌 IoT & Smart Home</h3>
+      <ul>
+        <li>Smart EV charging when prices are lowest</li>
+        <li>Automated heating and cooling schedules</li>
+        <li>Home battery charge optimization</li>
+      </ul>
+    </div>
+    <div class="usecase-card">
+      <h3>⛏️ Crypto Miners</h3>
+      <ul>
+        <li>Mine when electricity costs drop below target</li>
+        <li>Auto-shutdown during price spikes</li>
+        <li>Multi-country profitability comparison</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- PRICING -->
+<div class="section" id="pricing">
+  <div class="section-label">Pricing</div>
+  <h2>Simple, transparent pricing.</h2>
+  <p class="section-sub" style="margin-bottom:40px">Start free. Scale when you need to.</p>
+  <div class="pricing-grid">
+    <div class="pricing-card">
+      <div class="pricing-tier">Free</div>
+      <div class="pricing-price"><sup>$</sup>0</div>
+      <div class="pricing-mo">forever</div>
+      <ul class="pricing-features">
+        <li>100 results/day</li>
+        <li>1 country</li>
+        <li>7-day historical data</li>
+        <li>Email alerts</li>
+      </ul>
+      <a href="#waitlist" class="btn-ghost">Get Started</a>
+    </div>
+    <div class="pricing-card featured">
+      <div class="pricing-tier">Starter</div>
+      <div class="pricing-price"><sup>$</sup>29</div>
+      <div class="pricing-mo">per month</div>
+      <ul class="pricing-features">
+        <li>10,000 API calls/day</li>
+        <li>5 countries</li>
+        <li>90-day historical data</li>
+        <li>Smart alerts</li>
+        <li>Webhook support</li>
+      </ul>
+      <a href="#waitlist" class="btn-primary">Get Early Access</a>
+    </div>
+    <div class="pricing-card">
+      <div class="pricing-tier">Pro</div>
+      <div class="pricing-price"><sup>$</sup>149</div>
+      <div class="pricing-mo">per month</div>
+      <ul class="pricing-features">
+        <li>100,000 API calls/day</li>
+        <li>All 15 countries</li>
+        <li>2-year historical data</li>
+        <li>Dashboard access</li>
+        <li>Priority support</li>
+      </ul>
+      <a href="#waitlist" class="btn-ghost">Contact Us</a>
+    </div>
+  </div>
+  <p style="text-align:center;color:var(--muted);font-size:0.8rem;margin-top:20px">Enterprise plans available for custom needs.</p>
+</div>
+
+<hr class="divider">
+
+<!-- WAITLIST -->
+<div class="section" id="waitlist">
+  <div class="waitlist-wrap">
+    <div class="section-label" style="text-align:center">Early Access</div>
+    <h2>Be first when we launch.</h2>
+    <p>Early supporters get <strong style="color:var(--accent)">50% lifetime discount</strong>. No spam – just launch updates.</p>
+    <div class="waitlist-form">
+      <input type="email" id="emailInput" placeholder="your@email.com">
+      <button class="btn-primary" onclick="joinWaitlist()">Join →</button>
+    </div>
+    <div class="waitlist-success" id="waitlistSuccess">✓ You're on the list! We'll be in touch.</div>
+    <p class="waitlist-note">Or email directly: <a href="mailto:mukedlii.project@gmail.com?subject=Energy Monitor Waitlist&body=Hi! I'd like to join the waitlist.%0A%0AName: %0AInterest: (Trader/Business/Developer/Other)" style="color:var(--accent)">mukedlii.project@gmail.com</a></p>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-logo">⚡ EnergyMonitor</div>
+  <div class="footer-links">
+    <a href="https://github.com/Mukedlii/global-electricity-price-monitor" target="_blank">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+      GitHub
+    </a>
+    <a href="https://apify.com/mukedlii" target="_blank">Apify Actor ↗</a>
+    <a href="mailto:mukedlii.project@gmail.com">Contact</a>
+  </div>
+  <div class="footer-copy">© 2026 Energy Monitor</div>
+</footer>
+
+<script>
+const COUNTRIES = ['DE','FR','AT','HU','CZ','SK','RO','PL','IT','ES','NL','BE','CH','SI','HR'];
+
+async function fetchPrices() {
+  const today = new Date().toISOString().split('T')[0];
+  const grid = document.getElementById('priceGrid');
+  const ticker = document.getElementById('ticker');
+
+  const results = await Promise.allSettled(
+    COUNTRIES.map(c =>
+      fetch(`https://api.energy-charts.info/price?bzn=${c}&start=${today}&end=${today}`)
+        .then(r => r.json())
+        .then(d => ({ country: c, data: d }))
+        .catch(() => ({ country: c, error: true }))
+    )
+  );
+
+  const priceData = {};
+  results.forEach(r => {
+    if (r.status === 'fulfilled') {
+      const { country, data, error } = r.value;
+      if (!error && data.price) {
+        const valid = data.price.filter(p => p !== null && !isNaN(p));
+        if (valid.length) {
+          priceData[country] = {
+            max: Math.max(...valid),
+            min: Math.min(...valid),
+            avg: valid.reduce((a,b)=>a+b,0)/valid.length
+          };
+        }
+      }
+    }
+  });
+
+  // Update cards
+  const allMax = Object.values(priceData).map(d => d.max);
+  const globalMax = Math.max(...allMax);
+  const globalMin = Math.min(...allMax);
+
+  grid.innerHTML = COUNTRIES.map(c => {
+    const d = priceData[c];
+    if (!d) return `<div class="price-card" style="opacity:0.3">
+      <div class="card-country">${c}</div>
+      <div class="card-price" style="font-size:0.9rem;color:var(--muted)">N/A</div>
+      <div class="card-unit">no data</div>
+    </div>`;
+
+    const isHigh = d.max === globalMax;
+    const isLow = d.max === globalMin;
+    const isAlert = d.max > 200;
+
+    return `<div class="price-card ${isAlert ? 'alert' : ''}">
+      <div class="card-country">${c}</div>
+      <div class="card-price">${d.max.toFixed(1)}</div>
+      <div class="card-unit">EUR/MWh · avg ${d.avg.toFixed(0)}</div>
+      ${isHigh ? '<div class="card-badge badge-high">HIGH</div>' : ''}
+      ${isLow ? '<div class="card-badge badge-low">LOW</div>' : ''}
+    </div>`;
+  }).join('');
+
+  // Update ticker
+  const tickerItems = COUNTRIES.filter(c => priceData[c]).map(c => {
+    const d = priceData[c];
+    return `<div class="ticker-item">
+      <span class="ticker-country">${c}</span>
+      <span class="ticker-price">${d.max.toFixed(1)} EUR/MWh</span>
+    </div>`;
+  });
+  const doubled = [...tickerItems, ...tickerItems].join('');
+  ticker.innerHTML = doubled;
+
+  document.getElementById('lastUpdated').textContent =
+    'Updated ' + new Date().toLocaleTimeString('en-GB', {hour:'2-digit',minute:'2-digit'});
+}
+
+function joinWaitlist() {
+  const email = document.getElementById('emailInput').value;
+  if (!email || !email.includes('@')) {
+    document.getElementById('emailInput').style.borderColor = 'var(--danger)';
+    return;
+  }
+  // Open mailto as fallback (no backend yet)
+  window.location.href = `mailto:mukedlii.project@gmail.com?subject=Energy Monitor Waitlist&body=Email: ${email}%0AInterest: Developer`;
+  document.getElementById('waitlistSuccess').style.display = 'block';
+  document.getElementById('emailInput').value = '';
+}
+
+fetchPrices();
+</script>
+</body>
+</html>
