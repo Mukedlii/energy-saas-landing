@@ -12,7 +12,7 @@ export default async function handler(req, res) {
     'SK': 'SK',
     'RO': 'RO',
     'PL': 'PL',
-    'IT': 'IT_NORD',
+    'IT': 'IT-North',
     'ES': 'ES',
     'NL': 'NL',
     'BE': 'BE',
